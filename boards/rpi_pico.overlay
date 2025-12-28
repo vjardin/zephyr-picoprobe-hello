@@ -1,4 +1,7 @@
 /*
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Copyright (c) 2025 Vincent Jardin
+ *
  * Device tree overlay for Raspberry Pi Debug Probe
  * Routes console to UART1 (GPIO4=TX, GPIO5=RX) matching the J2 connector
  * Defines red LED on GPIO2

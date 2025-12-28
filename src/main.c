@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ * Copyright (c) 2025 Vincent Jardin
+ */
+
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/gpio.h>
 
