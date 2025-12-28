@@ -10,7 +10,8 @@ the UART J2 connector. All five LEDs blink together once per second.
 - Comprehensive shell commands for hardware debugging
 - Bonjour message output on UART1 (J2 connector), controllable via shell
 - BOOTSEL button detection with firmware update reminder
-- All five LEDs blinking
+- GPIO LEDs blinking (D1, D2, D3) and PWM LEDs with breathing effect (D4, D5)
+- Shell commands for LED brightness control
 - Watchdog timer with 5 second timeout
 - Internal temperature sensor (ADC channel 4)
 - Runtime log level control
@@ -81,16 +82,21 @@ On Linux, the FTDI adapter typically appears as /dev/ttyUSB0.
 
 ### LEDs
 
-The Debug Probe has five LEDs, all controlled by the firmware. No external
-wiring is required. All LEDs blink together once per second.
+The Debug Probe has five LEDs controlled by the firmware. No external wiring
+is required. Three LEDs use GPIO (on/off toggle), two use PWM (brightness
+control with breathing effect).
 
-    LED   Color    GPIO   Location
-    ---   ------   ----   --------
-    D1    Red       2     Status
-    D2    Green     7     UART side
-    D3    Yellow    8     UART side
-    D4    Green    15     DEBUG side
-    D5    Yellow   16     DEBUG side
+    LED   Color    GPIO   Control    Location
+    ---   ------   ----   -------    --------
+    D1    Red       2     GPIO       Status
+    D2    Green     7     GPIO       UART side
+    D3    Yellow    8     GPIO       UART side
+    D4    Green    15     PWM        DEBUG side
+    D5    Yellow   16     PWM        DEBUG side
+
+GPIO LEDs (D1, D2, D3) toggle on/off once per second. PWM LEDs (D4, D5)
+display a smooth breathing effect with adjustable brightness via shell
+commands.
 
 ### BOOTSEL Button
 
@@ -115,6 +121,27 @@ Connect to the shell via USB:
 
     bonjour on          Enable Bonjour message on UART1 (J2)
     bonjour off         Disable Bonjour message
+
+### LED Commands
+
+    led status                    Show LED status and brightness levels
+    led brightness <led> <0-100>  Set PWM LED brightness (0=D4, 1=D5)
+    led breathing [on|off]        Enable/disable breathing effect
+
+Setting brightness manually disables the breathing effect. Examples:
+
+    debug-probe:~$ led status
+    GPIO LEDs: D1 (red), D2 (green), D3 (yellow) - toggling
+    PWM LEDs:
+      D4 (green debug): 50%
+      D5 (yellow debug): 50%
+    Breathing: enabled
+
+    debug-probe:~$ led brightness 0 75
+    D4 brightness set to 75% (breathing disabled)
+
+    debug-probe:~$ led breathing on
+    Breathing enabled
 
 ### Kernel Commands
 
@@ -315,7 +342,8 @@ If you have picotool installed:
 
        picocom -b 115200 /dev/ttyACM0
 
-2. All five LEDs on the Debug Probe should blink every second.
+2. LEDs D1, D2, D3 should blink on/off every second. LEDs D4 and D5
+   should display a smooth breathing effect (fade in/out).
 
 3. Enable Bonjour messages:
 
@@ -344,9 +372,12 @@ If you have picotool installed:
     |- boards/
     |  |- rpi_pico.overlay      Device tree overlay for Debug Probe
     |- src/
-    |  |- main.c                Main application (LEDs, BOOTSEL, Bonjour)
+    |  |- main.c                Main application (BOOTSEL, Bonjour)
+    |  |- leds.c                LED management (GPIO and PWM)
+    |  |- leds.h                LED API declarations
     |  |- shell_cmds.c          Shell command implementations
-    |  |- watchdog.c            Watchdog feeder
+    |  |- watchdog.c            Watchdog management
+    |  |- watchdog.h            Watchdog API declarations
     |- docs/
     |  |- hardware-summary.md   Hardware pinout reference
     |  |- raspberry-pi-debug-probe-schematics.pdf
@@ -357,7 +388,11 @@ The boards/rpi_pico.overlay file configures:
 
 - USB CDC ACM as the console and shell interface
 - UART1 (GPIO4=TX, GPIO5=RX) for Bonjour output on J2 connector
-- All five LEDs with descriptive aliases (led_red, led_green_uart, etc.)
+- GPIO LEDs (D1, D2, D3) with gpio-leds compatible
+- PWM LEDs (D4, D5) with pwm-leds compatible for brightness control
+- PWM pinctrl routing slice 7B to GPIO15 and slice 0A to GPIO16
+- ADC for internal temperature sensor (channel 4)
+- Watchdog timer with debug halt pause
 
 This is necessary because the Debug Probe uses different pins than the standard
 Raspberry Pi Pico board definition in Zephyr.

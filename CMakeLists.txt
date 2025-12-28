@@ -10,4 +10,5 @@ target_sources(app PRIVATE
     src/main.c
     src/shell_cmds.c
     src/watchdog.c
+    src/leds.c
 )
