@@ -36,10 +36,27 @@ jobs:
               west update && \
               west zephyr-export && \
               west build -b rpi_pico picoprobe-hello && \
-              cp build/zephyr/zephyr.uf2 artifacts/picoprobe-hello.uf2
+              cp build/zephyr/zephyr.uf2 artifacts/picoprobe-hello.uf2 && \
+              cp build/zephyr/zephyr.elf artifacts/picoprobe-hello.elf
             "
+      - name: Copy firmware for Wokwi
+        run: |
+          mkdir -p ${{ github.workspace }}/picoprobe-hello/build/zephyr
+          cp ${{ github.workspace }}/artifacts/picoprobe-hello.uf2 \
+             ${{ github.workspace }}/picoprobe-hello/build/zephyr/zephyr.uf2
+          cp ${{ github.workspace }}/artifacts/picoprobe-hello.elf \
+             ${{ github.workspace }}/picoprobe-hello/build/zephyr/zephyr.elf
+      - name: Test with Wokwi
+        uses: wokwi/wokwi-ci-action@v1
+        continue-on-error: true
+        with:
+          token: ${{ secrets.WOKWI_CLI_TOKEN }}
+          path: picoprobe-hello
+          timeout: 10000
       - name: Upload firmware artifact
         uses: actions/upload-artifact@v4
         with:
           name: firmware
-          path: ${{ github.workspace }}/artifacts/picoprobe-hello.uf2
+          path: |
+            ${{ github.workspace }}/artifacts/picoprobe-hello.uf2
+            ${{ github.workspace }}/artifacts/picoprobe-hello.elf

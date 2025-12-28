@@ -400,6 +400,30 @@ The boards/rpi_pico.overlay file configures:
 This is necessary because the Debug Probe uses different pins than the standard
 Raspberry Pi Pico board definition in Zephyr.
 
+## Wokwi Simulation
+
+The project includes Wokwi configuration files for hardware simulation:
+
+- `wokwi.toml` - Simulation configuration pointing to firmware
+- `diagram.json` - Virtual circuit with Pi Pico and 5 LEDs
+
+### Running Locally
+
+Install the Wokwi CLI and run:
+
+    wokwi-cli --interactive
+
+### CI Integration
+
+The GitHub Actions workflow includes optional Wokwi testing. To enable it:
+
+1. Create an account at https://wokwi.com
+2. Go to https://wokwi.com/dashboard/ci and generate an API token
+3. Add the token as `WOKWI_CLI_TOKEN` secret in your repository settings
+
+The Wokwi test runs with `continue-on-error: true` so builds succeed even
+without the token configured.
+
 ## License
 
 SPDX-License-Identifier: AGPL-3.0-or-later

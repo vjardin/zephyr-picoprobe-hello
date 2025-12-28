@@ -1,0 +1,4 @@
+[wokwi]
+version = 1
+firmware = "build/zephyr/zephyr.uf2"
+elf = "build/zephyr/zephyr.elf"
