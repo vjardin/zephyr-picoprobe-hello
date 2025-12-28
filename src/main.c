@@ -5,10 +5,24 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/uart.h>
 #include <zephyr/irq.h>
 #include <hardware/structs/ioqspi.h>
 #include <hardware/structs/sio.h>
-#include <pico/bootrom.h>
+
+/* Bonjour state from shell_cmds.c */
+extern bool bonjour_enabled;
+
+/* UART1 device for Bonjour output on J2 connector */
+static const struct device *const uart1_dev = DEVICE_DT_GET(DT_NODELABEL(uart1));
+
+/* Send string to UART1 (J2 connector) */
+static void uart1_print(const char *str)
+{
+	while (*str) {
+		uart_poll_out(uart1_dev, *str++);
+	}
+}
 
 #define NUM_LEDS 5
 
@@ -81,7 +95,24 @@ static bool __ramfunc get_bootsel_button(void)
 int main(void)
 {
 	int ret;
+	const struct device *const console_dev =
+		DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
+	uint32_t dtr = 0;
 	bool bootsel_msg_shown = false;
+
+	/* Wait for DTR (terminal connected) before starting */
+	if (device_is_ready(console_dev)) {
+		while (!dtr) {
+			uart_line_ctrl_get(console_dev, UART_LINE_CTRL_DTR,
+					   &dtr);
+			k_sleep(K_MSEC(100));
+		}
+	}
+
+	/* Check UART1 for Bonjour output */
+	if (!device_is_ready(uart1_dev)) {
+		printk("UART1 device not ready\n");
+	}
 
 	printk("Starting Debug Probe LED demo...\n");
 
@@ -111,7 +142,9 @@ int main(void)
 			}
 		} else {
 			bootsel_msg_shown = false;
-			printk("Bonjour\n");
+			if (bonjour_enabled) {
+				uart1_print("Bonjour\r\n");
+			}
 		}
 
 		/* Toggle all LEDs */

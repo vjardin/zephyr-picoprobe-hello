@@ -3,14 +3,15 @@
  * Copyright (c) 2025 Vincent Jardin
  *
  * Device tree overlay for Raspberry Pi Debug Probe
- * Routes console to UART1 (GPIO4=TX, GPIO5=RX) matching the J2 connector
+ * Routes console/shell to USB CDC ACM
+ * Configures UART1 (GPIO4=TX, GPIO5=RX) for Bonjour output on J2 connector
  * Defines all 5 LEDs on the Debug Probe board
  */
 
 / {
 	chosen {
-		zephyr,console = &uart1;
-		zephyr,shell-uart = &uart1;
+		zephyr,console = &cdc_acm_uart0;
+		zephyr,shell-uart = &cdc_acm_uart0;
 	};
 
 	leds {
@@ -43,6 +44,12 @@
 		led-yellow-uart = &led_yellow_uart;
 		led-green-debug = &led_green_debug;
 		led-yellow-debug = &led_yellow_debug;
+	};
+};
+
+&zephyr_udc0 {
+	cdc_acm_uart0: cdc_acm_uart0 {
+		compatible = "zephyr,cdc-acm-uart";
 	};
 };
 
