@@ -4,7 +4,7 @@
  *
  * Device tree overlay for Raspberry Pi Debug Probe
  * Routes console to UART1 (GPIO4=TX, GPIO5=RX) matching the J2 connector
- * Defines red LED on GPIO2
+ * Defines all 5 LEDs on the Debug Probe board
  */
 
 / {
@@ -15,14 +15,34 @@
 
 	leds {
 		compatible = "gpio-leds";
-		led_red: led_red {
+		led_red: led_d1 {
 			gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>;
 			label = "Red LED (D1)";
+		};
+		led_green_uart: led_d2 {
+			gpios = <&gpio0 7 GPIO_ACTIVE_HIGH>;
+			label = "Green LED UART (D2)";
+		};
+		led_yellow_uart: led_d3 {
+			gpios = <&gpio0 8 GPIO_ACTIVE_HIGH>;
+			label = "Yellow LED UART (D3)";
+		};
+		led_green_debug: led_d4 {
+			gpios = <&gpio0 15 GPIO_ACTIVE_HIGH>;
+			label = "Green LED DEBUG (D4)";
+		};
+		led_yellow_debug: led_d5 {
+			gpios = <&gpio0 16 GPIO_ACTIVE_HIGH>;
+			label = "Yellow LED DEBUG (D5)";
 		};
 	};
 
 	aliases {
 		led0 = &led_red;
+		led1 = &led_green_uart;
+		led2 = &led_yellow_uart;
+		led3 = &led_green_debug;
+		led4 = &led_yellow_debug;
 	};
 };
 
