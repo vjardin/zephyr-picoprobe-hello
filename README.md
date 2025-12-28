@@ -1,5 +1,7 @@
 # Zephyr Hello World for Raspberry Pi Debug Probe
 
+[![Build](https://github.com/vjardin/zephyr-picoprobe-hello/actions/workflows/build.yml/badge.svg)](https://github.com/vjardin/zephyr-picoprobe-hello/actions/workflows/build.yml)
+
 A Zephyr OS application that runs on the Raspberry Pi Debug Probe hardware.
 It provides a Zephyr shell over USB CDC and can output "Bonjour" messages on
 the UART J2 connector. All five LEDs blink together once per second.
