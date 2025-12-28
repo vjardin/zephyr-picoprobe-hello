@@ -1,0 +1,37 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: picoprobe-hello
+      - name: Pull Zephyr CI image
+        run: docker pull ghcr.io/zephyrproject-rtos/ci:v0.28.7
+      - name: Initialize Zephyr workspace and build
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}/picoprobe-hello:/workdir/picoprobe-hello \
+            -w /workdir \
+            ghcr.io/zephyrproject-rtos/ci:v0.28.7 \
+            bash -c "
+              west init -l picoprobe-hello && \
+              west update && \
+              west zephyr-export && \
+              west build -b rpi_pico picoprobe-hello
+            "
