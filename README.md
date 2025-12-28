@@ -1,7 +1,8 @@
 # Zephyr Hello World for Raspberry Pi Debug Probe
 
 A simple Zephyr OS application that runs on the Raspberry Pi Debug Probe hardware.
-It prints "Bonjour" every second on the UART and blinks the red LED.
+It prints "Bonjour" every second on the UART and blinks all five LEDs. Pressing
+the BOOTSEL button displays a message to guide firmware updates.
 
 ## Hardware
 
@@ -49,10 +50,31 @@ The yellow wire is only required if you need to send data to the Debug Probe.
 
 On Linux, the FTDI adapter typically appears as /dev/ttyUSB0.
 
-### Red LED (D1)
+### LEDs
 
-The red LED is directly controlled by the firmware on GPIO2. No external wiring
-is required. It blinks once per second.
+The Debug Probe has five LEDs, all controlled by the firmware. No external
+wiring is required. All LEDs blink together once per second.
+
+    LED   Color    GPIO   Location
+    ---   ------   ----   --------
+    D1    Red       2     Status
+    D2    Green     7     UART side
+    D3    Yellow    8     UART side
+    D4    Green    15     DEBUG side
+    D5    Yellow   16     DEBUG side
+
+### BOOTSEL Button
+
+The BOOTSEL button can be detected by the firmware while running. When pressed,
+the application displays:
+
+    BOOTSEL pressed, unplug/plug USB to flash a new firmware
+
+This reminds the user how to enter bootloader mode for firmware updates.
+
+Note: Reading the BOOTSEL button requires special handling because it is wired
+to the QSPI flash chip select (QSPI_SS). The firmware temporarily disables
+flash access from a RAM-resident function to safely read the button state.
 
 ## Prerequisites
 
@@ -102,7 +124,7 @@ You need a working Zephyr development environment:
        cp build/zephyr/zephyr.uf2 /media/$USER/RPI-RP2/
 
    The device will automatically reboot and start running. You'll
-   see the red LED blinking.
+   see all five LEDs blinking.
 
 ### Method 2: Using picotool
 
@@ -123,7 +145,10 @@ If you have picotool installed:
 
 2. You should see "Bonjour" printed every second.
 
-3. The red LED (D1) on the Debug Probe should blink every second.
+3. All five LEDs on the Debug Probe should blink every second.
+
+4. Press and hold the BOOTSEL button - you should see the firmware update
+   message instead of "Bonjour".
 
 ## Project Structure
 
@@ -143,7 +168,7 @@ If you have picotool installed:
 The boards/rpi_pico.overlay file configures:
 
 - UART1 as the console (GPIO4=TX, GPIO5=RX) matching the J2/UART connector
-- Red LED on GPIO2 as an alias "led0"
+- All five LEDs as aliases led0 through led4
 
 This is necessary because the Debug Probe uses different pins than the standard
 Raspberry Pi Pico board definition in Zephyr.
