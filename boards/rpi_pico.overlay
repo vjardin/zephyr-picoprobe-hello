@@ -38,11 +38,11 @@
 	};
 
 	aliases {
-		led0 = &led_red;
-		led1 = &led_green_uart;
-		led2 = &led_yellow_uart;
-		led3 = &led_green_debug;
-		led4 = &led_yellow_debug;
+		led-red = &led_red;
+		led-green-uart = &led_green_uart;
+		led-yellow-uart = &led_yellow_uart;
+		led-green-debug = &led_green_debug;
+		led-yellow-debug = &led_yellow_debug;
 	};
 };
 

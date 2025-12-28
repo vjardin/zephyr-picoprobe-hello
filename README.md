@@ -168,7 +168,7 @@ If you have picotool installed:
 The boards/rpi_pico.overlay file configures:
 
 - UART1 as the console (GPIO4=TX, GPIO5=RX) matching the J2/UART connector
-- All five LEDs as aliases led0 through led4
+- All five LEDs with descriptive aliases (led_red, led_green_uart, etc.)
 
 This is necessary because the Debug Probe uses different pins than the standard
 Raspberry Pi Pico board definition in Zephyr.

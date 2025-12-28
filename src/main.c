@@ -13,11 +13,11 @@
 #define NUM_LEDS 5
 
 static const struct gpio_dt_spec leds[NUM_LEDS] = {
-	GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios),
-	GPIO_DT_SPEC_GET(DT_ALIAS(led1), gpios),
-	GPIO_DT_SPEC_GET(DT_ALIAS(led2), gpios),
-	GPIO_DT_SPEC_GET(DT_ALIAS(led3), gpios),
-	GPIO_DT_SPEC_GET(DT_ALIAS(led4), gpios),
+	GPIO_DT_SPEC_GET(DT_ALIAS(led_red), gpios),
+	GPIO_DT_SPEC_GET(DT_ALIAS(led_green_uart), gpios),
+	GPIO_DT_SPEC_GET(DT_ALIAS(led_yellow_uart), gpios),
+	GPIO_DT_SPEC_GET(DT_ALIAS(led_green_debug), gpios),
+	GPIO_DT_SPEC_GET(DT_ALIAS(led_yellow_debug), gpios),
 };
 
 /*
