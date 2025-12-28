@@ -4,7 +4,8 @@
 
 A Zephyr OS application that runs on the Raspberry Pi Debug Probe hardware.
 It provides a Zephyr shell over USB CDC and can output "Bonjour" messages on
-the UART J2 connector. All five LEDs blink together once per second.
+the UART J2 connector. Three LEDs blink on/off while two debug LEDs display
+a smooth breathing effect with adjustable brightness.
 
 ## Features
 
