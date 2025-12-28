@@ -14,6 +14,7 @@
 		zephyr,shell-uart = &cdc_acm_uart0;
 	};
 
+	/* GPIO-controlled LEDs (accent LEDs) */
 	leds {
 		compatible = "gpio-leds";
 		led_red: led_d1 {
@@ -28,12 +29,17 @@
 			gpios = <&gpio0 8 GPIO_ACTIVE_HIGH>;
 			label = "Yellow LED UART (D3)";
 		};
+	};
+
+	/* PWM-controlled LEDs (debug LEDs with brightness control) */
+	pwmleds {
+		compatible = "pwm-leds";
 		led_green_debug: led_d4 {
-			gpios = <&gpio0 15 GPIO_ACTIVE_HIGH>;
+			pwms = <&pwm 15 PWM_MSEC(20) PWM_POLARITY_NORMAL>;
 			label = "Green LED DEBUG (D4)";
 		};
 		led_yellow_debug: led_d5 {
-			gpios = <&gpio0 16 GPIO_ACTIVE_HIGH>;
+			pwms = <&pwm 0 PWM_MSEC(20) PWM_POLARITY_NORMAL>;
 			label = "Yellow LED DEBUG (D5)";
 		};
 	};
@@ -44,6 +50,8 @@
 		led-yellow-uart = &led_yellow_uart;
 		led-green-debug = &led_green_debug;
 		led-yellow-debug = &led_yellow_debug;
+		pwm-led0 = &led_green_debug;
+		pwm-led1 = &led_yellow_debug;
 	};
 };
 
@@ -70,4 +78,44 @@
 			input-enable;
 		};
 	};
+
+	/* PWM for debug LEDs brightness control */
+	pwm_debug_leds: pwm_debug_leds {
+		group1 {
+			pinmux = <PWM_7B_P15>,  /* D4 Green DEBUG - GPIO15 */
+				 <PWM_0A_P16>; /* D5 Yellow DEBUG - GPIO16 */
+		};
+	};
+};
+
+/* Enable ADC for internal temperature sensor (channel 4) */
+&adc {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@4 {
+		reg = <4>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+	};
+};
+
+/* Enable PWM for debug LED brightness control */
+&pwm {
+	status = "okay";
+	pinctrl-0 = <&pwm_debug_leds>;
+	pinctrl-names = "default";
+};
+
+/* Enable I2C0 for shell access */
+&i2c0 {
+	status = "okay";
+};
+
+/* Enable watchdog - must be fed in main loop */
+&wdt0 {
+	status = "okay";
 };

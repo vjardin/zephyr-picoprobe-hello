@@ -7,9 +7,13 @@ the UART J2 connector. All five LEDs blink together once per second.
 ## Features
 
 - Zephyr shell over USB CDC (/dev/ttyACM0)
+- Comprehensive shell commands for hardware debugging
 - Bonjour message output on UART1 (J2 connector), controllable via shell
 - BOOTSEL button detection with firmware update reminder
 - All five LEDs blinking
+- Watchdog timer with 5 second timeout
+- Internal temperature sensor (ADC channel 4)
+- Runtime log level control
 
 ## Hardware
 
@@ -107,14 +111,127 @@ Connect to the shell via USB:
 
     picocom -b 115200 /dev/ttyACM0
 
-Available commands:
+### Application Commands
 
     bonjour on          Enable Bonjour message on UART1 (J2)
     bonjour off         Disable Bonjour message
+
+### Kernel Commands
+
     kernel version      Show Zephyr version
     kernel threads      List all threads
     kernel thread list  Detailed thread information
-    device list         List all devices
+    kernel uptime       Show system uptime
+    kernel reboot       Reboot options (warm/cold)
+    kernel stacks       Show thread stack usage
+
+### Device Commands
+
+    device list         List all devices and their status
+
+### GPIO Commands
+
+    gpio conf <device> <pin> <mode>   Configure pin (in, out, od)
+    gpio get <device> <pin>           Read pin state
+    gpio set <device> <pin> <value>   Set pin high (1) or low (0)
+    gpio toggle <device> <pin>        Toggle pin state
+    gpio blink <device> <pin>         Blink pin
+    gpio info <device> <pin>          Show pin configuration
+
+### Hardware Info Commands
+
+    hwinfo devid        Show unique device ID
+    hwinfo reset_cause  Show last reset reason
+
+### Flash Commands
+
+    flash read <device> <offset> <len>   Read flash contents
+    flash page_info <device> <offset>    Show flash page info
+    flash erase <device> <offset> <len>  Erase flash region
+    flash write <device> <offset> <data> Write to flash
+
+### USB Device Commands
+
+    usbd defaults       Initialize USB with defaults
+    usbd enable         Enable USB device
+    usbd disable        Disable USB device
+    usbd device         Show device info
+    usbd config         Show configuration
+    usbd wakeup         Trigger remote wakeup
+
+### Log Commands
+
+    log status          Show all log module levels
+    log enable <module> <level>    Set module log level
+    log disable <module>           Disable module logging
+    log go              Resume logging
+    log halt            Pause logging
+
+Log levels: 0=off, 1=err, 2=wrn, 3=inf, 4=dbg
+
+### CRC Commands
+
+    crc8 <data>         Calculate CRC-8
+    crc16 <data>        Calculate CRC-16
+    crc32 <data>        Calculate CRC-32
+
+### PWM Commands
+
+    pwm cycles <device> <channel> <period> <pulse>   Set PWM in cycles
+    pwm usec <device> <channel> <period> <pulse>     Set PWM in microseconds
+    pwm nsec <device> <channel> <period> <pulse>     Set PWM in nanoseconds
+
+### ADC Commands (Internal Temperature)
+
+    adc <device> acq_time <ch> default   Set acquisition time
+    adc <device> resolution <bits>       Set resolution (12-bit max)
+    adc <device> read <channel>          Read ADC value
+
+To read the internal temperature sensor (channel 4):
+
+    debug-probe:~$ adc adc@4004c000 acq_time 0 default
+    debug-probe:~$ adc adc@4004c000 resolution 12
+    debug-probe:~$ adc adc@4004c000 read 4
+    read: 747
+
+Convert raw ADC value to temperature:
+
+    Voltage = raw x 3.3 / 4096
+    Temperature (°C) = 27 - (Voltage - 0.706) / 0.001721
+
+Example: raw=747 → V=0.601V → T ~ 88°C (note: varies by chip calibration, TODO)
+
+### I2C Commands
+
+    i2c scan <device>                 Scan for devices on bus
+    i2c read <device> <addr> <reg>    Read from device
+    i2c read_byte <device> <addr>     Read single byte
+    i2c write <device> <addr> <data>  Write to device
+    i2c recover <device>              Recover bus from stuck state
+
+Note: The Debug Probe hardware does not expose I2C pins on external connectors.
+The I2C shell is included for completeness but cannot be used without hardware
+modification. The default I2C0 pins (GPIO4/GPIO5) are used by UART1 (J2 connector).
+
+### Watchdog Commands
+
+    wdt setup <device> <options>      Configure watchdog
+    wdt feed <device> <channel>       Feed watchdog
+
+Note: The application automatically feeds the watchdog every second.
+
+### POSIX Commands
+
+    posix uname -a      Show system information (sysname, nodename, etc.)
+
+### Memory Commands
+
+    devmem dump <addr> <len>    Dump memory contents
+    devmem load <addr> <data>   Write to memory address
+
+### Other Commands
+
+    date                Show/set system date
     reboot              Reboot the device
     help                Show all available commands
 
@@ -229,6 +346,7 @@ If you have picotool installed:
     |- src/
     |  |- main.c                Main application (LEDs, BOOTSEL, Bonjour)
     |  |- shell_cmds.c          Shell command implementations
+    |  |- watchdog.c            Watchdog feeder
     |- docs/
     |  |- hardware-summary.md   Hardware pinout reference
     |  |- raspberry-pi-debug-probe-schematics.pdf

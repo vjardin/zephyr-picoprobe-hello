@@ -5,6 +5,7 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/pwm.h>
 #include <zephyr/drivers/uart.h>
 #include <zephyr/irq.h>
 #include <hardware/structs/ioqspi.h>
@@ -16,6 +17,8 @@ extern bool bonjour_enabled;
 /* UART1 device for Bonjour output on J2 connector */
 static const struct device *const uart1_dev = DEVICE_DT_GET(DT_NODELABEL(uart1));
 
+#include "watchdog.h"
+
 /* Send string to UART1 (J2 connector) */
 static void uart1_print(const char *str)
 {
@@ -24,15 +27,28 @@ static void uart1_print(const char *str)
 	}
 }
 
-#define NUM_LEDS 5
+/* GPIO-controlled LEDs (accent LEDs: D1, D2, D3) */
+#define NUM_GPIO_LEDS 3
 
-static const struct gpio_dt_spec leds[NUM_LEDS] = {
+static const struct gpio_dt_spec gpio_leds[NUM_GPIO_LEDS] = {
 	GPIO_DT_SPEC_GET(DT_ALIAS(led_red), gpios),
 	GPIO_DT_SPEC_GET(DT_ALIAS(led_green_uart), gpios),
 	GPIO_DT_SPEC_GET(DT_ALIAS(led_yellow_uart), gpios),
-	GPIO_DT_SPEC_GET(DT_ALIAS(led_green_debug), gpios),
-	GPIO_DT_SPEC_GET(DT_ALIAS(led_yellow_debug), gpios),
 };
+
+/* PWM-controlled LEDs (debug LEDs: D4, D5) with brightness control */
+#define NUM_PWM_LEDS 2
+
+static const struct pwm_dt_spec pwm_leds[NUM_PWM_LEDS] = {
+	PWM_DT_SPEC_GET(DT_ALIAS(pwm_led0)),
+	PWM_DT_SPEC_GET(DT_ALIAS(pwm_led1)),
+};
+
+/* PWM brightness state for breathing effect */
+static uint32_t pwm_brightness = 0;
+static bool pwm_increasing = true;
+#define PWM_STEP 5
+#define PWM_MAX 100
 
 /*
  * Read BOOTSEL button state.
@@ -115,44 +131,84 @@ int main(void)
 	}
 
 	printk("Starting Debug Probe LED demo...\n");
+	printk("Note: I2C shell disabled - GPIO4/5 used by UART1 (J2 connector)\n");
 
-	/* Initialize all LEDs */
-	for (int i = 0; i < NUM_LEDS; i++) {
-		if (!gpio_is_ready_dt(&leds[i])) {
-			printk("LED%d GPIO not ready\n", i);
+	/* Initialize GPIO LEDs (D1, D2, D3) */
+	for (int i = 0; i < NUM_GPIO_LEDS; i++) {
+		if (!gpio_is_ready_dt(&gpio_leds[i])) {
+			printk("GPIO LED%d not ready\n", i);
 			return -1;
 		}
 
-		ret = gpio_pin_configure_dt(&leds[i], GPIO_OUTPUT_ACTIVE);
+		ret = gpio_pin_configure_dt(&gpio_leds[i], GPIO_OUTPUT_ACTIVE);
 		if (ret < 0) {
-			printk("Failed to configure LED%d GPIO: %d\n", i, ret);
+			printk("Failed to configure GPIO LED%d: %d\n", i, ret);
 			return -1;
 		}
 	}
 
-	printk("All LEDs initialized, entering main loop...\n");
+	/* Initialize PWM LEDs (D4, D5) */
+	for (int i = 0; i < NUM_PWM_LEDS; i++) {
+		if (!pwm_is_ready_dt(&pwm_leds[i])) {
+			printk("PWM LED%d not ready\n", i);
+			return -1;
+		}
+	}
+
+	printk("All LEDs initialized (3 GPIO + 2 PWM), entering main loop...\n");
+
+	/* Initialize watchdog */
+	watchdog_init();
+
+	uint32_t loop_count = 0;
 
 	while (1) {
-		/* Check BOOTSEL button */
-		if (get_bootsel_button()) {
-			if (!bootsel_msg_shown) {
-				printk("BOOTSEL pressed, "
-				       "unplug/plug USB to flash a new firmware\n");
-				bootsel_msg_shown = true;
+		/* Check BOOTSEL button and Bonjour ~once per second (64ms * 16 = 1024ms) */
+		if ((loop_count & 0x0F) == 0) {
+			if (get_bootsel_button()) {
+				if (!bootsel_msg_shown) {
+					printk("BOOTSEL pressed, "
+					       "unplug/plug USB to flash a new firmware\n");
+					bootsel_msg_shown = true;
+				}
+			} else {
+				bootsel_msg_shown = false;
+				if (bonjour_enabled) {
+					uart1_print("Bonjour\r\n");
+				}
+			}
+
+			/* Toggle GPIO LEDs (D1, D2, D3) once per second */
+			for (int i = 0; i < NUM_GPIO_LEDS; i++) {
+				gpio_pin_toggle_dt(&gpio_leds[i]);
+			}
+		}
+
+		/* Update PWM LEDs (D4, D5) with breathing effect */
+		uint32_t pulse = (pwm_leds[0].period * pwm_brightness) / PWM_MAX;
+		for (int i = 0; i < NUM_PWM_LEDS; i++) {
+			pwm_set_pulse_dt(&pwm_leds[i], pulse);
+		}
+
+		/* Update brightness for next iteration */
+		if (pwm_increasing) {
+			pwm_brightness += PWM_STEP;
+			if (pwm_brightness >= PWM_MAX) {
+				pwm_brightness = PWM_MAX;
+				pwm_increasing = false;
 			}
 		} else {
-			bootsel_msg_shown = false;
-			if (bonjour_enabled) {
-				uart1_print("Bonjour\r\n");
+			pwm_brightness -= PWM_STEP;
+			if (pwm_brightness == 0) {
+				pwm_increasing = true;
 			}
 		}
 
-		/* Toggle all LEDs */
-		for (int i = 0; i < NUM_LEDS; i++) {
-			gpio_pin_toggle_dt(&leds[i]);
-		}
+		/* Feed the watchdog to prevent reset */
+		watchdog_feed();
 
-		k_sleep(K_SECONDS(1));
+		loop_count++;
+		k_sleep(K_MSEC(64));
 	}
 
 	return 0;
