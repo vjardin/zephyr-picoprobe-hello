@@ -424,6 +424,19 @@ The GitHub Actions workflow includes optional Wokwi testing. To enable it:
 The Wokwi test runs with `continue-on-error: true` so builds succeed even
 without the token configured.
 
+### Limitations
+
+Wokwi's Zephyr RTOS support for Raspberry Pi Pico is limited (see
+https://github.com/wokwi/wokwi-features/issues/516):
+
+- UART serial output does not work with Zephyr's PL011 driver
+- The `expect-text` feature cannot be used to validate boot messages
+- USB CDC serial is not captured by the simulation
+
+The CI uses timeout-based smoke testing: the simulation runs for 10 seconds
+and passes if the firmware does not crash. This verifies the firmware compiles
+and executes without fatal errors, but cannot validate functional behavior.
+
 ## License
 
 SPDX-License-Identifier: AGPL-3.0-or-later
