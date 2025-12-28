@@ -35,7 +35,7 @@ jobs:
               west init -l picoprobe-hello && \
               west update && \
               west zephyr-export && \
-              west build -b rpi_pico picoprobe-hello && \
+              west build -b rpi_debug_probe picoprobe-hello && \
               cp build/zephyr/zephyr.uf2 artifacts/picoprobe-hello.uf2 && \
               cp build/zephyr/zephyr.elf artifacts/picoprobe-hello.elf
             "
