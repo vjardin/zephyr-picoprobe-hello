@@ -92,12 +92,18 @@ int main(void)
 	uint32_t dtr = 0;
 	bool bootsel_msg_shown = false;
 
-	/* Wait for DTR (terminal connected) before starting */
+	/*
+	 * Wait for DTR (terminal connected) before starting.
+	 * Timeout after 3 seconds to allow simulation without DTR support.
+	 */
 	if (device_is_ready(console_dev)) {
-		while (!dtr) {
+		int dtr_timeout = 30; /* 30 * 100ms = 3 seconds */
+
+		while (!dtr && dtr_timeout > 0) {
 			uart_line_ctrl_get(console_dev, UART_LINE_CTRL_DTR,
 					   &dtr);
 			k_sleep(K_MSEC(100));
+			dtr_timeout--;
 		}
 	}
 
