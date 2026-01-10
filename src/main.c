@@ -7,13 +7,21 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/uart.h>
 #include <zephyr/irq.h>
+#include <zephyr/sys/byteorder.h>
 #include <zephyr/usb/usbd.h>
+#include <zephyr/usb/bos.h>
+#include <zephyr/usb/msos_desc.h>
 #include <hardware/structs/ioqspi.h>
 #include <hardware/structs/sio.h>
+
+#include <zephyr/logging/log.h>
+LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 
 #include <sample_usbd.h>
 #include <cmsis_dap.h>
 
+#include "msosv2.h"
+#include "webusb.h"
 #include "leds.h"
 #include "watchdog.h"
 
@@ -112,6 +120,20 @@ int main(void)
 	if (sample_usbd == NULL) {
 		printk("Failed to setup USB device\n");
 		return -ENODEV;
+	}
+
+	/* Add MSOS v2 descriptor for automatic WinUSB driver on Windows */
+	ret = usbd_add_descriptor(sample_usbd, &bos_vreq_msosv2);
+	if (ret) {
+		printk("Failed to add MSOS v2 descriptor: %d\n", ret);
+		return ret;
+	}
+
+	/* Add WebUSB descriptor for browser-based debugging tools */
+	ret = usbd_add_descriptor(sample_usbd, &bos_vreq_webusb);
+	if (ret) {
+		printk("Failed to add WebUSB descriptor: %d\n", ret);
+		return ret;
 	}
 
 	ret = usbd_init(sample_usbd);
