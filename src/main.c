@@ -4,10 +4,15 @@
  */
 
 #include <zephyr/kernel.h>
+#include <zephyr/device.h>
 #include <zephyr/drivers/uart.h>
 #include <zephyr/irq.h>
+#include <zephyr/usb/usbd.h>
 #include <hardware/structs/ioqspi.h>
 #include <hardware/structs/sio.h>
+
+#include <sample_usbd.h>
+#include <cmsis_dap.h>
 
 #include "leds.h"
 #include "watchdog.h"
@@ -89,8 +94,37 @@ int main(void)
 	int ret;
 	const struct device *const console_dev =
 		DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
+	const struct device *const swd_dev =
+		DEVICE_DT_GET_ONE(zephyr_swdp_gpio);
+	struct usbd_context *sample_usbd;
 	uint32_t dtr = 0;
 	bool bootsel_msg_shown = false;
+
+	/* Initialize CMSIS-DAP with the SWD device */
+	ret = dap_setup(swd_dev);
+	if (ret) {
+		printk("Failed to initialize DAP: %d\n", ret);
+		return ret;
+	}
+
+	/* Setup USB device with all registered classes (CDC ACM + DAP) */
+	sample_usbd = sample_usbd_setup_device(NULL);
+	if (sample_usbd == NULL) {
+		printk("Failed to setup USB device\n");
+		return -ENODEV;
+	}
+
+	ret = usbd_init(sample_usbd);
+	if (ret) {
+		printk("Failed to initialize USB: %d\n", ret);
+		return ret;
+	}
+
+	ret = usbd_enable(sample_usbd);
+	if (ret) {
+		printk("Failed to enable USB: %d\n", ret);
+		return ret;
+	}
 
 	/*
 	 * Wait for DTR (terminal connected) before starting.

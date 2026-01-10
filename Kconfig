@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (c) 2025 Vincent Jardin
+
+mainmenu "Debug Probe Application"
+
+# Source USB sample Kconfig for SAMPLE_USBD_* options
+source "$(ZEPHYR_BASE)/samples/subsys/usb/common/Kconfig.sample_usbd"
+
+source "Kconfig.zephyr"

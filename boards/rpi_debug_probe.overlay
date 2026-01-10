@@ -19,6 +19,15 @@
 		zephyr,shell-uart = &cdc_acm_uart0;
 	};
 
+	/* SWD Debug Port for CMSIS-DAP (J3 connector) */
+	dp0 {
+		compatible = "zephyr,swdp-gpio";
+		status = "okay";
+		clk-gpios = <&gpio0 12 GPIO_ACTIVE_HIGH>;
+		dio-gpios = <&gpio0 14 GPIO_PULL_UP>;
+		port-write-cycles = <1>;
+	};
+
 	/* GPIO-controlled LEDs (accent LEDs) */
 	leds {
 		compatible = "gpio-leds";
